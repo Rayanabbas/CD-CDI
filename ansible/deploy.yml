@@ -1,0 +1,50 @@
+---
+- name: Déploiement de l'application Next.js
+  hosts: server
+  become: yes
+
+  tasks:
+    - name: Mettre à jour le cache apt
+      apt:
+        update_cache: yes
+
+    - name: Installer Node.js et npm
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - nodejs
+        - npm
+
+    - name: Installer PM2 globalement
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Installer Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Cloner le projet depuis GitHub
+      git:
+        repo: 'https://github.com/Rayanabbas/CD-CDI.git'
+        dest: /home/ubuntu/my-app
+        version: main
+        force: yes
+
+    - name: Installer les dépendances
+      command: npm install
+      args:
+        chdir: /home/ubuntu/my-app
+
+    - name: Build le projet
+      command: npm run build
+      args:
+        chdir: /home/ubuntu/my-app
+
+    - name: Démarrer l'application avec PM2
+      command: pm2 start npm --name "my-app" -- start
+      args:
+        chdir: /home/ubuntu/my-app
+
